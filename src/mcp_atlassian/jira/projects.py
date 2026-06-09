@@ -463,3 +463,91 @@ class ProjectsMixin(JiraClient, SearchOperationsProto):
             release_date=release_date,
             description=description,
         )
+
+    def create_project(
+        self,
+        key: str,
+        name: str,
+        project_type_key: str | None = None,
+        project_template_key: str | None = None,
+        description: str | None = None,
+        lead: str | None = None,
+        url: str | None = None,
+        assignee_type: str | None = None,
+        avatar_id: int | None = None,
+        issue_security_scheme: int | None = None,
+        permission_scheme: int | None = None,
+        notification_scheme: int | None = None,
+        category_id: int | None = None,
+    ) -> dict[str, Any]:
+        """
+        Create a new Jira project.
+
+        Args:
+            key: The project key (required, e.g., 'PROJ')
+            name: The project name (required)
+            project_type_key: Project type key (e.g., 'business', 'software')
+            project_template_key: Project template key
+            description: Project description
+            lead: Project lead username or account ID
+            url: Project URL
+            assignee_type: Assignee type ('PROJECT_LEAD' or 'UNASSIGNED')
+            avatar_id: Avatar ID number
+            issue_security_scheme: Issue security scheme ID
+            permission_scheme: Permission scheme ID
+            notification_scheme: Notification scheme ID
+            category_id: Project category ID
+
+        Returns:
+            The created project object as returned by Jira
+        """
+        data: dict[str, Any] = {
+            "key": key,
+            "name": name,
+        }
+        if project_type_key:
+            data["projectTypeKey"] = project_type_key
+        if project_template_key:
+            data["projectTemplateKey"] = project_template_key
+        if description:
+            data["description"] = description
+        if lead:
+            data["lead"] = lead
+        if url:
+            data["url"] = url
+        if assignee_type:
+            data["assigneeType"] = assignee_type
+        if avatar_id is not None:
+            data["avatarId"] = avatar_id
+        if issue_security_scheme is not None:
+            data["issueSecurityScheme"] = issue_security_scheme
+        if permission_scheme is not None:
+            data["permissionScheme"] = permission_scheme
+        if notification_scheme is not None:
+            data["notificationScheme"] = notification_scheme
+        if category_id is not None:
+            data["categoryId"] = category_id
+
+        return self.jira.create_project_from_raw_json(data)  # type: ignore[no-any-return]
+
+    def update_project(
+        self,
+        project_key: str,
+        data: dict[str, Any],
+        expand: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Update a Jira project.
+
+        Only non-null values sent in the data dict will be updated.
+        Values available for assigneeType: 'PROJECT_LEAD' and 'UNASSIGNED'.
+
+        Args:
+            project_key: The project key (e.g., 'PROJ')
+            data: Dictionary containing the project data to update
+            expand: Optional parameters to expand
+
+        Returns:
+            The updated project object as returned by Jira
+        """
+        return self.jira.update_project(project_key, data, expand)  # type: ignore[no-any-return]

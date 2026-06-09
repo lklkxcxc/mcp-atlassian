@@ -766,3 +766,132 @@ def test_create_project_version_error(projects_mixin: ProjectsMixin) -> None:
     ):
         with pytest.raises(Exception):
             projects_mixin.create_project_version("PROJ4", "v6.0")
+
+
+def test_create_project_minimal(projects_mixin: ProjectsMixin) -> None:
+    """Test create_project with only required fields."""
+    mock_response = {"id": "10000", "key": "PROJ", "name": "Test Project"}
+    projects_mixin.jira.create_project_from_raw_json.return_value = mock_response
+
+    result = projects_mixin.create_project(key="PROJ", name="Test Project")
+    assert result == mock_response
+    projects_mixin.jira.create_project_from_raw_json.assert_called_once_with(
+        {"key": "PROJ", "name": "Test Project"}
+    )
+
+
+def test_create_project_all_fields(projects_mixin: ProjectsMixin) -> None:
+    """Test create_project with all optional fields."""
+    mock_response = {
+        "id": "10000",
+        "key": "PROJ",
+        "name": "Test Project",
+        "projectTypeKey": "software",
+    }
+    projects_mixin.jira.create_project_from_raw_json.return_value = mock_response
+
+    result = projects_mixin.create_project(
+        key="PROJ",
+        name="Test Project",
+        project_type_key="software",
+        project_template_key="scrum",
+        description="A test project",
+        lead="user1",
+        url="https://example.com",
+        assignee_type="PROJECT_LEAD",
+        avatar_id=42,
+        issue_security_scheme=10000,
+        permission_scheme=10001,
+        notification_scheme=10002,
+        category_id=10003,
+    )
+    assert result == mock_response
+    expected_data = {
+        "key": "PROJ",
+        "name": "Test Project",
+        "projectTypeKey": "software",
+        "projectTemplateKey": "scrum",
+        "description": "A test project",
+        "lead": "user1",
+        "url": "https://example.com",
+        "assigneeType": "PROJECT_LEAD",
+        "avatarId": 42,
+        "issueSecurityScheme": 10000,
+        "permissionScheme": 10001,
+        "notificationScheme": 10002,
+        "categoryId": 10003,
+    }
+    projects_mixin.jira.create_project_from_raw_json.assert_called_once_with(
+        expected_data
+    )
+
+
+def test_create_project_with_zero_ids(projects_mixin: ProjectsMixin) -> None:
+    """Test create_project with zero-valued optional int fields."""
+    mock_response = {"id": "10000", "key": "PROJ", "name": "Test Project"}
+    projects_mixin.jira.create_project_from_raw_json.return_value = mock_response
+
+    result = projects_mixin.create_project(
+        key="PROJ",
+        name="Test Project",
+        avatar_id=0,
+        issue_security_scheme=0,
+        permission_scheme=0,
+        notification_scheme=0,
+        category_id=0,
+    )
+    assert result == mock_response
+    expected_data = {
+        "key": "PROJ",
+        "name": "Test Project",
+        "avatarId": 0,
+        "issueSecurityScheme": 0,
+        "permissionScheme": 0,
+        "notificationScheme": 0,
+        "categoryId": 0,
+    }
+    projects_mixin.jira.create_project_from_raw_json.assert_called_once_with(
+        expected_data
+    )
+
+
+def test_create_project_exception(projects_mixin: ProjectsMixin) -> None:
+    """Test create_project propagates errors from the API."""
+    projects_mixin.jira.create_project_from_raw_json.side_effect = Exception(
+        "API failure"
+    )
+
+    with pytest.raises(Exception):
+        projects_mixin.create_project("PROJ", "Test Project")
+
+
+def test_update_project_success(projects_mixin: ProjectsMixin) -> None:
+    """Test update_project with valid data."""
+    mock_response = {"id": "10000", "key": "PROJ", "name": "Updated Project"}
+    projects_mixin.jira.update_project.return_value = mock_response
+
+    data = {"name": "Updated Project", "description": "Updated description"}
+    result = projects_mixin.update_project("PROJ", data)
+    assert result == mock_response
+    projects_mixin.jira.update_project.assert_called_once_with("PROJ", data, None)
+
+
+def test_update_project_with_expand(projects_mixin: ProjectsMixin) -> None:
+    """Test update_project with expand parameter."""
+    mock_response = {"id": "10000", "key": "PROJ", "name": "Updated Project"}
+    projects_mixin.jira.update_project.return_value = mock_response
+
+    data = {"assigneeType": "UNASSIGNED"}
+    result = projects_mixin.update_project("PROJ", data, expand="description")
+    assert result == mock_response
+    projects_mixin.jira.update_project.assert_called_once_with(
+        "PROJ", data, "description"
+    )
+
+
+def test_update_project_exception(projects_mixin: ProjectsMixin) -> None:
+    """Test update_project propagates errors from the API."""
+    projects_mixin.jira.update_project.side_effect = Exception("API failure")
+
+    with pytest.raises(Exception):
+        projects_mixin.update_project("PROJ", {"name": "New Name"})

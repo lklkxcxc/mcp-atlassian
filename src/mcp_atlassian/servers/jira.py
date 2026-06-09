@@ -3273,3 +3273,181 @@ async def get_issues_development_info(
         logger.error(f"Error getting development info for issues: {str(e)}")
         error_result = {"success": False, "error": str(e)}
         return json.dumps(error_result, indent=2, ensure_ascii=False)
+
+
+@jira_mcp.tool(
+    tags={"jira", "write", "toolset:jira_projects"},
+    annotations={"title": "Create Project", "destructiveHint": True},
+)
+@check_write_access
+async def create_project(
+    ctx: Context,
+    key: Annotated[
+        str,
+        Field(
+            description="Project key (e.g., 'PROJ', 'ACV2')",
+            pattern=PROJECT_KEY_PATTERN,
+        ),
+    ],
+    name: Annotated[str, Field(description="Project name")],
+    project_type_key: Annotated[
+        str | None,
+        Field(
+            description="Project type key (e.g., 'business', 'software')",
+            default=None,
+        ),
+    ] = None,
+    project_template_key: Annotated[
+        str | None,
+        Field(description="Project template key", default=None),
+    ] = None,
+    description: Annotated[
+        str | None,
+        Field(description="Project description in Markdown format", default=None),
+    ] = None,
+    lead: Annotated[
+        str | None,
+        Field(
+            description="Project lead username or account ID", default=None
+        ),
+    ] = None,
+    url: Annotated[
+        str | None, Field(description="Project URL", default=None)
+    ] = None,
+    assignee_type: Annotated[
+        str | None,
+        Field(
+            description="Assignee type ('PROJECT_LEAD' or 'UNASSIGNED')",
+            default=None,
+        ),
+    ] = None,
+    avatar_id: Annotated[
+        int | None, Field(description="Avatar ID number", default=None)
+    ] = None,
+    issue_security_scheme: Annotated[
+        int | None,
+        Field(description="Issue security scheme ID", default=None),
+    ] = None,
+    permission_scheme: Annotated[
+        int | None,
+        Field(description="Permission scheme ID", default=None),
+    ] = None,
+    notification_scheme: Annotated[
+        int | None,
+        Field(description="Notification scheme ID", default=None),
+    ] = None,
+    category_id: Annotated[
+        int | None,
+        Field(description="Project category ID", default=None),
+    ] = None,
+) -> str:
+    """Create a new Jira project.
+
+    Args:
+        ctx: The FastMCP context.
+        key: The project key (required, e.g., 'PROJ').
+        name: The project name (required).
+        project_type_key: Project type key (e.g., 'business', 'software').
+        project_template_key: Project template key.
+        description: Project description in Markdown format.
+        lead: Project lead username or account ID.
+        url: Project URL.
+        assignee_type: Assignee type ('PROJECT_LEAD' or 'UNASSIGNED').
+        avatar_id: Avatar ID number.
+        issue_security_scheme: Issue security scheme ID.
+        permission_scheme: Permission scheme ID.
+        notification_scheme: Notification scheme ID.
+        category_id: Project category ID.
+
+    Returns:
+        JSON string representing the created project object.
+    """
+    jira = await get_jira_fetcher(ctx)
+    try:
+        project = jira.create_project(
+            key=key,
+            name=name,
+            project_type_key=project_type_key,
+            project_template_key=project_template_key,
+            description=description,
+            lead=lead,
+            url=url,
+            assignee_type=assignee_type,
+            avatar_id=avatar_id,
+            issue_security_scheme=issue_security_scheme,
+            permission_scheme=permission_scheme,
+            notification_scheme=notification_scheme,
+            category_id=category_id,
+        )
+        return json.dumps(project, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(
+            f"Error creating project {key}: {str(e)}", exc_info=True
+        )
+        return json.dumps(
+            {"success": False, "error": str(e)}, indent=2, ensure_ascii=False
+        )
+
+
+@jira_mcp.tool(
+    tags={"jira", "write", "toolset:jira_projects"},
+    annotations={"title": "Update Project", "destructiveHint": True},
+)
+@check_write_access
+async def update_project(
+    ctx: Context,
+    project_key: Annotated[
+        str,
+        Field(
+            description="Jira project key (e.g., 'PROJ', 'ACV2')",
+            pattern=PROJECT_KEY_PATTERN,
+        ),
+    ],
+    data: Annotated[
+        str,
+        Field(
+            description=(
+                "JSON string of fields to update. Only non-null values will be "
+                "updated. Values available for assigneeType: 'PROJECT_LEAD' and "
+                "'UNASSIGNED'. Example: "
+                '{"name": "New Name", "description": "Updated description"}'
+            ),
+        ),
+    ],
+    expand: Annotated[
+        str | None,
+        Field(description="Optional parameters to expand", default=None),
+    ] = None,
+) -> str:
+    """Update a Jira project.
+
+    Args:
+        ctx: The FastMCP context.
+        project_key: The project key (e.g., 'PROJ').
+        data: JSON string of fields to update.
+        expand: Optional parameters to expand.
+
+    Returns:
+        JSON string representing the updated project object.
+    """
+    jira = await get_jira_fetcher(ctx)
+    try:
+        data_dict = json.loads(data)
+        if not isinstance(data_dict, dict):
+            raise ValueError("data must be a JSON object")
+        result = jira.update_project(project_key, data_dict, expand)
+        return json.dumps(result, indent=2, ensure_ascii=False)
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing data JSON for project {project_key}: {str(e)}")
+        return json.dumps(
+            {"success": False, "error": f"Invalid JSON data: {str(e)}"},
+            indent=2,
+            ensure_ascii=False,
+        )
+    except Exception as e:
+        logger.error(
+            f"Error updating project {project_key}: {str(e)}", exc_info=True
+        )
+        return json.dumps(
+            {"success": False, "error": str(e)}, indent=2, ensure_ascii=False
+        )
