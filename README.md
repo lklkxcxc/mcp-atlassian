@@ -51,6 +51,33 @@ Add to your Claude Desktop or Cursor MCP configuration:
 
 > **Server/Data Center users**: Use `JIRA_PERSONAL_TOKEN` instead of `JIRA_USERNAME` + `JIRA_API_TOKEN`. See [Authentication](https://mcp-atlassian.soomiles.com/docs/authentication) for details.
 
+#### Using `.mcp.json` (Project-Level Configuration)
+
+For project-level MCP configuration (supported by Claude Code), create a `.mcp.json` file in your project root:
+
+```json
+{
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\Users\\lklkx\\Desktop\\code\\projects\\mcp-atlassian",
+        "run",
+        "mcp-atlassian"
+      ],
+      "env": {
+        "JIRA_URL": "https://your-company.atlassian.net",
+        "JIRA_USERNAME": "your.email@company.com",
+        "JIRA_API_TOKEN": "your_api_token"
+      }
+    }
+  }
+}
+```
+
+> **Local development**: Use `uv --directory <path> run` to run from a local clone instead of `uvx` (which pulls from PyPI). For Server/Data Center, use `JIRA_PERSONAL_TOKEN` instead of `JIRA_USERNAME` + `JIRA_API_TOKEN`.
+
 ### 3. Start Using
 
 Ask your AI assistant to:
