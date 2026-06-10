@@ -357,9 +357,9 @@ def validate_test_environment():
         pytest.fail(f"Failed to import test utilities: {e}")
 
     # Log session start
-    print("\n🧪 Starting MCP Atlassian test session with enhanced fixtures")
+    print("\n[TEST] Starting MCP Atlassian test session with enhanced fixtures")
 
     yield
 
     # Log session end
-    print("\n✅ Completed MCP Atlassian test session")
+    print("\n[TEST] Completed MCP Atlassian test session")
