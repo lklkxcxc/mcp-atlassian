@@ -73,24 +73,6 @@ For project-level MCP configuration (supported by Claude Code), create a `.mcp.j
       }
     }
   }
-}
-local pipy
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "uvx",
-      "args": [
-        "--index-url", 
-        "http://10.10.73.114/simple/",  
-        "mcp-atlassian"
-      ],
-      "env": {
-        "JIRA_URL": "http://10.10.202.6:8080",
-        "JIRA_PERSONAL_TOKEN": "MDI4NTQzNjcxMzE1OhsfSgvTKzgz564aoav+pzVkPkQM"
-      }
-    }
-  }
-}
 ```
 
 > **Local development**: Use `uv --directory <path> run` to run from a local clone instead of `uvx` (which pulls from PyPI). For Server/Data Center, use `JIRA_PERSONAL_TOKEN` instead of `JIRA_USERNAME` + `JIRA_API_TOKEN`.
