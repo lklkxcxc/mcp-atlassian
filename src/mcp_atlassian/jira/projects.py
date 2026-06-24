@@ -551,3 +551,32 @@ class ProjectsMixin(JiraClient, SearchOperationsProto):
             The updated project object as returned by Jira
         """
         return self.jira.update_project(project_key, data, expand)  # type: ignore[no-any-return]
+
+    def create_project_from_template(
+        self,
+        key: str,
+        name: str,
+        lead: str,
+        source_project_id: int,
+    ) -> dict[str, Any]:
+        """
+        Create a new Jira project from an existing project's template.
+
+        This uses Jira's project template sharing feature to create a new project
+        based on an existing project's configuration, including Scrum/Kanban boards.
+
+        Args:
+            key: The project key (required, e.g., 'PROJ')
+            name: The project name (required)
+            lead: Project lead username or account ID
+            source_project_id: The numeric ID of the source project to clone
+
+        Returns:
+            The created project object as returned by Jira
+        """
+        return self.jira.create_project_from_shared_template(
+            project_id=source_project_id,
+            key=key,
+            name=name,
+            lead=lead,
+        )  # type: ignore[no-any-return]

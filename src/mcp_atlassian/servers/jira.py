@@ -3290,26 +3290,25 @@ async def create_project(
         ),
     ],
     name: Annotated[str, Field(description="Project name")],
-    project_type_key: Annotated[
-        str | None,
+    lead: Annotated[
+        str,
         Field(
-            description="Project type key (e.g., 'business', 'software')",
-            default=None,
+            description="Project lead username or account ID (required for Jira Server/DC)"
         ),
-    ] = None,
+    ],
+    project_type_key: Annotated[
+        str,
+        Field(
+            description="Project type key: 'software' for software projects, 'business' for business projects"
+        ),
+    ],
     project_template_key: Annotated[
         str | None,
-        Field(description="Project template key", default=None),
+        Field(description="Project template key (optional, varies by Jira instance)", default=None),
     ] = None,
     description: Annotated[
         str | None,
         Field(description="Project description in Markdown format", default=None),
-    ] = None,
-    lead: Annotated[
-        str | None,
-        Field(
-            description="Project lead username or account ID", default=None
-        ),
     ] = None,
     url: Annotated[
         str | None, Field(description="Project URL", default=None)
@@ -3347,10 +3346,10 @@ async def create_project(
         ctx: The FastMCP context.
         key: The project key (required, e.g., 'PROJ').
         name: The project name (required).
-        project_type_key: Project type key (e.g., 'business', 'software').
-        project_template_key: Project template key.
+        lead: Project lead username or account ID (required).
+        project_type_key: Project type key - 'software' or 'business' (required).
+        project_template_key: Project template key (optional).
         description: Project description in Markdown format.
-        lead: Project lead username or account ID.
         url: Project URL.
         assignee_type: Assignee type ('PROJECT_LEAD' or 'UNASSIGNED').
         avatar_id: Avatar ID number.
@@ -3448,6 +3447,90 @@ async def update_project(
         logger.error(
             f"Error updating project {project_key}: {str(e)}", exc_info=True
         )
+        return json.dumps(
+            {"success": False, "error": str(e)}, indent=2, ensure_ascii=False
+        )
+
+
+@jira_mcp.tool(
+    tags={"jira", "write", "toolset:jira_projects"},
+    annotations={"title": "Create Project from Template", "destructiveHint": True},
+)
+@check_write_access
+async def create_project_from_template(
+    ctx: Context,
+    key: Annotated[
+        str,
+        Field(
+            description="Project key for the new project (e.g., 'PROJ', 'ACV2')",
+            pattern=PROJECT_KEY_PATTERN,
+        ),
+    ],
+    name: Annotated[str, Field(description="Name for the new project")],
+    lead: Annotated[
+        str,
+        Field(description="Project lead username or account ID"),
+    ],
+    source_project_id: Annotated[
+        int,
+        Field(description="Numeric ID of the source project to clone template from (e.g., 10200 for SCRUM)"),
+    ],
+) -> str:
+    """Create a new Jira project from an existing project's template.
+
+    This uses Jira's project template sharing feature to create a new project
+    based on an existing project's configuration, including Scrum/Kanban boards.
+
+    Args:
+        ctx: The FastMCP context.
+        key: Project key for the new project (e.g., 'PROJ').
+        name: Name for the new project.
+        lead: Project lead username or account ID.
+        source_project_id: Numeric ID of source project (e.g., 10200 for SCRUM project).
+
+    Returns:
+        JSON string representing the created project object.
+    """
+    jira = await get_jira_fetcher(ctx)
+    try:
+        project = jira.create_project_from_template(
+            key=key,
+            name=name,
+            lead=lead,
+            source_project_id=source_project_id,
+        )
+        return json.dumps(project, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(
+            f"Error creating project from template {key}: {str(e)}", exc_info=True
+        )
+        return json.dumps(
+            {"success": False, "error": str(e)}, indent=2, ensure_ascii=False
+        )
+
+
+@jira_mcp.tool(
+    tags={"jira", "read", "toolset:jira_projects"},
+    annotations={"title": "Get Project Leads", "readOnlyHint": True},
+)
+async def get_project_leads(ctx: Context) -> str:
+    """Get all project leads from all accessible projects.
+
+    Returns a dictionary mapping project keys to their lead usernames.
+    This is useful when creating a new project and needing to specify a lead.
+
+    Args:
+        ctx: The FastMCP context.
+
+    Returns:
+        JSON string representing a dictionary of project keys to lead usernames.
+    """
+    jira = await get_jira_fetcher(ctx)
+    try:
+        leads = jira.get_project_leads()
+        return json.dumps({"success": True, "leads": leads}, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting project leads: {str(e)}", exc_info=True)
         return json.dumps(
             {"success": False, "error": str(e)}, indent=2, ensure_ascii=False
         )
