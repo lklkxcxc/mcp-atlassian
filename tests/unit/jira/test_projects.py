@@ -895,3 +895,46 @@ def test_update_project_exception(projects_mixin: ProjectsMixin) -> None:
 
     with pytest.raises(Exception):
         projects_mixin.update_project("PROJ", {"name": "New Name"})
+
+
+def test_create_project_from_template_success(
+    projects_mixin: ProjectsMixin,
+) -> None:
+    """Test create_project_from_template with valid data."""
+    mock_response = {
+        "id": "10202",
+        "key": "NEWPROJ",
+        "name": "New Project from Template",
+    }
+    projects_mixin.jira.create_project_from_shared_template.return_value = (
+        mock_response
+    )
+
+    result = projects_mixin.create_project_from_template(
+        key="NEWPROJ",
+        name="New Project from Template",
+        lead="admin",
+        source_project_id=10200,
+    )
+    assert result == mock_response
+    projects_mixin.jira.create_project_from_shared_template.assert_called_once_with(
+        project_id=10200,
+        key="NEWPROJ",
+        name="New Project from Template",
+        lead="admin",
+    )
+
+
+def test_create_project_from_template_exception(projects_mixin: ProjectsMixin) -> None:
+    """Test create_project_from_template propagates errors from the API."""
+    projects_mixin.jira.create_project_from_shared_template.side_effect = Exception(
+        "API failure"
+    )
+
+    with pytest.raises(Exception):
+        projects_mixin.create_project_from_template(
+            key="NEWPROJ",
+            name="New Project from Template",
+            lead="admin",
+            source_project_id=10200,
+        )
